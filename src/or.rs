@@ -83,3 +83,10 @@ where
         self.primary.owns(ptr) || self.fallback.owns(ptr)
     }
 }
+
+#[test]
+fn test() {
+    Box::try_new_in(1, Null.or(Null)).unwrap_err();
+    #[cfg(feature = "malloc")]
+    Box::try_new_in(1, Null.or(crate::Malloc)).unwrap();
+}

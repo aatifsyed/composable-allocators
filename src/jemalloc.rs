@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use core::{cmp, ffi::c_void, mem, ptr};
 
+/// An allocator using [`jemalloc`](https://jemalloc.net/).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Jemalloc;
 

@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use core::ffi::c_void;
 
+/// An allocator using [`mimalloc`](https://github.com/microsoft/mimalloc).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Mimalloc;
 
