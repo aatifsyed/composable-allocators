@@ -4,3 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+allocator-api2 = { version = "0.2.18", default-features = false }
+libc = { version = "0.2.155", optional = true, default-features = false }
+libmimalloc-sys = { version = "0.1.38", optional = true, default-features = false, features = [
+    "extended",
+] }
+tikv-jemalloc-sys = { version = "0.5.4", optional = true, default-features = false }
+
+[features]
+default = ["malloc", "jemalloc", "mimalloc"]
+malloc = ["dep:libc"]
+jemalloc = ["dep:libc", "dep:tikv-jemalloc-sys"]
+mimalloc = ["dep:libmimalloc-sys"]
+
+[dev-dependencies]
+allocator-api2 = "0.2.18"
