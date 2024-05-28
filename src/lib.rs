@@ -16,20 +16,19 @@ mod mimalloc;
 #[cfg(feature = "mimalloc")]
 pub use mimalloc::Mimalloc;
 
+mod limit;
+pub use limit::{CountLimit, SizeLimit};
 mod null;
 pub use null::Null;
 mod or;
 pub use or::Or;
 
 mod prelude {
-    pub(crate) use crate::Owns;
+    pub(crate) use crate::*;
     pub(crate) use allocator_api2::alloc::{AllocError, Allocator};
-    pub(crate) use core::{alloc::Layout, ptr::NonNull};
     #[cfg(test)]
-    pub(crate) use {
-        crate::{AllocatorExt as _, Null},
-        allocator_api2::boxed::Box,
-    };
+    pub(crate) use allocator_api2::boxed::Box;
+    pub(crate) use core::{alloc::Layout, ptr::NonNull};
 }
 
 /// Whether it is safe to call [`Allocator::deallocate`].
@@ -49,6 +48,24 @@ pub trait AllocatorExt: Allocator {
         Or {
             primary: self,
             fallback,
+        }
+    }
+    fn limit_size(self, limit: usize) -> SizeLimit<Self>
+    where
+        Self: Sized,
+    {
+        SizeLimit {
+            inner: self,
+            limit: limit.into(),
+        }
+    }
+    fn limit_count(self, limit: usize) -> CountLimit<Self>
+    where
+        Self: Sized,
+    {
+        CountLimit {
+            inner: self,
+            limit: limit.into(),
         }
     }
 }
