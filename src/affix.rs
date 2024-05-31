@@ -21,6 +21,7 @@ pub(crate) struct AffixLayout {
 }
 
 impl AffixLayout {
+    #[inline(always)]
     pub fn new<PrefixT, SuffixT>(body: Layout) -> Option<Self> {
         let (outer, body_offset) = Layout::new::<PrefixT>().extend(body).ok()?;
         let (outer, suffix_offset) = outer.extend(Layout::new::<SuffixT>()).ok()?;
@@ -33,12 +34,14 @@ impl AffixLayout {
     }
     /// # Safety
     /// - `outer` must be from an [`Allocator::allocate`] call with [`Self::outer`].
+    #[inline(always)]
     pub unsafe fn narrow(&self, outer: NonNull<[u8]>) -> NonNull<[u8]> {
         let ptr = outer.as_ptr().cast::<u8>().byte_add(self.body_offset);
         NonNull::slice_from_raw_parts(NonNull::new_unchecked(ptr), self.suffix_offset)
     }
     /// # Safety
     /// - `body` must be from a call to [`Affix::affix_allocate`].
+    #[inline(always)]
     pub unsafe fn broaden(&self, body: NonNull<u8>) -> (NonNull<u8>, NonNull<u8>) {
         let prefix = NonNull::new_unchecked(body.as_ptr().byte_sub(self.body_offset));
         (
@@ -48,6 +51,10 @@ impl AffixLayout {
     }
 }
 
+/// An [`Allocator`] wrapper which prepends a `PrefixT` and appends a `SuffixT`
+/// to each allocation.
+///
+/// See [`Self::affix_allocate`] to get pointers to the prefix and suffix.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Affix<A, PrefixT, SuffixT> {
     pub inner: A,
@@ -59,6 +66,8 @@ impl<A, PrefixT, SuffixT> Affix<A, PrefixT, SuffixT>
 where
     A: Allocator,
 {
+    /// Return `(prefix, body, suffix)` to an affixed allocation.
+    #[inline(always)]
     #[allow(clippy::type_complexity)]
     pub fn affix_allocate(
         &self,
@@ -71,8 +80,11 @@ where
         let (prefix, suffix) = unsafe { affix_layout.broaden(body.cast::<u8>()) };
         Ok((prefix, body, suffix))
     }
+    /// Get `(prefix, suffix)` given a pointer to a `body` of an allocation.
+    ///
     /// # Safety
     /// - `body` must be from a call to [`Self::affix_allocate`].
+    #[inline(always)]
     pub unsafe fn affix_get(body: NonNull<u8>, layout: Layout) -> (NonNull<u8>, NonNull<u8>) {
         AffixLayout::new::<PrefixT, SuffixT>(layout)
             .unwrap_unchecked()
@@ -84,11 +96,12 @@ unsafe impl<A, PrefixT, SuffixT> Allocator for Affix<A, PrefixT, SuffixT>
 where
     A: Allocator,
 {
+    #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let (_, body, _) = self.affix_allocate(layout)?;
         Ok(body)
     }
-
+    #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
         let affix_layout = AffixLayout::new::<PrefixT, SuffixT>(layout).unwrap_unchecked();
         let (start, _) = affix_layout.broaden(ptr);
@@ -100,6 +113,7 @@ unsafe impl<A, PrefixT, SuffixT> Owns for Affix<A, PrefixT, SuffixT>
 where
     A: Owns,
 {
+    #[inline(always)]
     fn owns(&self, ptr: NonNull<u8>, layout: Layout) -> bool {
         match AffixLayout::new::<PrefixT, SuffixT>(layout) {
             Some(affix_layout) => {
@@ -112,6 +126,8 @@ where
     }
 }
 
+/// An [`Allocator`] which checks [`Self::prefix`] and [`Self::suffix`] are
+/// maintained around each allocation, [`panic`]-ing if they aren't.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Guard<A, PrefixT, SuffixT> {
     pub inner: Affix<A, PrefixT, SuffixT>,
@@ -125,6 +141,7 @@ where
     PrefixT: Copy + PartialEq,
     SuffixT: Copy + PartialEq,
 {
+    #[inline(always)]
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let (prefix, body, suffix) = self.inner.affix_allocate(layout)?;
         unsafe { ptr::write(prefix.as_ptr().cast::<PrefixT>(), self.prefix) };
@@ -132,6 +149,7 @@ where
         Ok(body)
     }
 
+    #[inline(always)]
     unsafe fn deallocate(&self, body: NonNull<u8>, layout: Layout) {
         let affix_layout = AffixLayout::new::<PrefixT, SuffixT>(layout).unwrap_unchecked();
         let (prefix, suffix) = affix_layout.broaden(body);
