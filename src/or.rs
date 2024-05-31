@@ -20,7 +20,7 @@ where
     }
     #[inline(always)]
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        if self.primary.owns(ptr) {
+        if self.primary.owns(ptr, layout) {
             self.primary.deallocate(ptr, layout)
         } else {
             self.fallback.deallocate(ptr, layout)
@@ -39,7 +39,7 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        if self.primary.owns(ptr) {
+        if self.primary.owns(ptr, old_layout) {
             self.primary.grow(ptr, old_layout, new_layout)
         } else {
             self.fallback.grow(ptr, old_layout, new_layout)
@@ -52,7 +52,7 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        if self.primary.owns(ptr) {
+        if self.primary.owns(ptr, old_layout) {
             self.primary.grow_zeroed(ptr, old_layout, new_layout)
         } else {
             self.fallback.grow_zeroed(ptr, old_layout, new_layout)
@@ -65,7 +65,7 @@ where
         old_layout: Layout,
         new_layout: Layout,
     ) -> Result<NonNull<[u8]>, AllocError> {
-        if self.primary.owns(ptr) {
+        if self.primary.owns(ptr, old_layout) {
             self.primary.shrink(ptr, old_layout, new_layout)
         } else {
             self.fallback.shrink(ptr, old_layout, new_layout)
@@ -79,8 +79,8 @@ where
     FallbackT: Owns,
 {
     #[inline(always)]
-    fn owns(&self, ptr: NonNull<u8>) -> bool {
-        self.primary.owns(ptr) || self.fallback.owns(ptr)
+    fn owns(&self, ptr: NonNull<u8>, layout: Layout) -> bool {
+        self.primary.owns(ptr, layout) || self.fallback.owns(ptr, layout)
     }
 }
 
@@ -88,5 +88,5 @@ where
 fn test() {
     Box::try_new_in(1, Null.or(Null)).unwrap_err();
     #[cfg(feature = "malloc")]
-    Box::try_new_in(1, Null.or(crate::Malloc)).unwrap();
+    let _ = Box::new_in(1, Null.or(Malloc));
 }

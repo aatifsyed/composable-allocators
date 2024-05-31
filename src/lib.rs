@@ -1,7 +1,7 @@
 #![no_std]
 
 use allocator_api2::alloc::Allocator;
-use core::ptr::NonNull;
+use core::{alloc::Layout, marker::PhantomData, ptr::NonNull};
 
 #[cfg(feature = "malloc")]
 mod malloc;
@@ -18,6 +18,8 @@ pub use mimalloc::Mimalloc;
 
 mod limit;
 pub use limit::{CountLimit, SizeLimit};
+mod affix;
+pub use affix::{Affix, Guard};
 mod null;
 pub use null::Null;
 mod or;
@@ -36,7 +38,7 @@ mod prelude {
 /// # Safety
 /// - unsafe code may rely on correct implementations
 pub unsafe trait Owns {
-    fn owns(&self, ptr: NonNull<u8>) -> bool;
+    fn owns(&self, ptr: NonNull<u8>, layout: Layout) -> bool;
 }
 
 /// Extension traits for [`Allocator`].
@@ -66,6 +68,24 @@ pub trait AllocatorExt: Allocator {
         CountLimit {
             inner: self,
             limit: limit.into(),
+        }
+    }
+    fn guard<PrefixT, SuffixT>(
+        self,
+        prefix: PrefixT,
+        suffix: SuffixT,
+    ) -> Guard<Self, PrefixT, SuffixT>
+    where
+        Self: Sized,
+    {
+        Guard {
+            inner: Affix {
+                inner: self,
+                prefix: PhantomData,
+                suffix: PhantomData,
+            },
+            prefix,
+            suffix,
         }
     }
 }

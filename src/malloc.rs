@@ -18,7 +18,7 @@ unsafe impl Allocator for Malloc {
             )
         } {
             0 => match NonNull::new(memptr.cast::<u8>()) {
-                Some(it) => Ok(NonNull::slice_from_raw_parts(it, layout.size())),
+                Some(malloc) => Ok(NonNull::slice_from_raw_parts(malloc, layout.size())),
                 None => unreachable!(),
             },
             libc::EINVAL => unreachable!(),
@@ -28,12 +28,12 @@ unsafe impl Allocator for Malloc {
     }
 
     #[inline(always)]
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
-        libc::free(ptr.as_ptr().cast::<c_void>())
+    unsafe fn deallocate(&self, free: NonNull<u8>, _: Layout) {
+        libc::free(free.as_ptr().cast::<c_void>())
     }
 }
 
 #[test]
 fn should_succeed() {
-    Box::try_new_in(1, Malloc).unwrap();
+    let _ = Box::new_in(1, Malloc);
 }

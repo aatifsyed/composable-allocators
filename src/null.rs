@@ -20,7 +20,7 @@ unsafe impl Allocator for Null {
 
 unsafe impl crate::Owns for Null {
     #[inline(always)]
-    fn owns(&self, _: NonNull<u8>) -> bool {
+    fn owns(&self, _: NonNull<u8>, _: Layout) -> bool {
         false
     }
 }

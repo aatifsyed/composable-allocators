@@ -34,5 +34,5 @@ unsafe impl Allocator for Jemalloc {
 
 #[test]
 fn should_succeed() {
-    Box::try_new_in(1, Jemalloc).unwrap();
+    let _ = Box::new_in(1, Jemalloc);
 }

@@ -33,8 +33,8 @@ where
     A: Owns,
 {
     #[inline(always)]
-    fn owns(&self, ptr: NonNull<u8>) -> bool {
-        self.inner.owns(ptr)
+    fn owns(&self, ptr: NonNull<u8>, layout: Layout) -> bool {
+        self.inner.owns(ptr, layout)
     }
 }
 
@@ -81,8 +81,8 @@ where
     A: Owns,
 {
     #[inline(always)]
-    fn owns(&self, ptr: NonNull<u8>) -> bool {
-        self.inner.owns(ptr)
+    fn owns(&self, ptr: NonNull<u8>, layout: Layout) -> bool {
+        self.inner.owns(ptr, layout)
     }
 }
 

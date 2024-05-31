@@ -27,7 +27,7 @@ unsafe impl Allocator for Mimalloc {
 
 unsafe impl Owns for Mimalloc {
     #[inline(always)]
-    fn owns(&self, ptr: NonNull<u8>) -> bool {
+    fn owns(&self, ptr: NonNull<u8>, _: Layout) -> bool {
         // TODO(aatifsyed): what does "default heap of this thread" mean?
         unsafe { libmimalloc_sys::mi_check_owned(ptr.as_ptr().cast::<c_void>()) }
     }
@@ -35,5 +35,5 @@ unsafe impl Owns for Mimalloc {
 
 #[test]
 fn should_succeed() {
-    Box::try_new_in(1, Mimalloc).unwrap();
+    let _ = Box::new_in(1, Mimalloc);
 }
