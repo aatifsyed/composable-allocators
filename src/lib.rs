@@ -24,6 +24,8 @@ mod null;
 pub use null::Null;
 mod or;
 pub use or::Or;
+mod zero;
+pub use zero::Zero;
 
 mod prelude {
     pub(crate) use crate::*;
@@ -87,6 +89,12 @@ pub trait AllocatorExt: Allocator {
             prefix,
             suffix,
         }
+    }
+    fn zero(self) -> Zero<Self>
+    where
+        Self: Sized,
+    {
+        Zero { inner: self }
     }
 }
 impl<A> AllocatorExt for A where A: Allocator {}
